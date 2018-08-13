@@ -69,7 +69,8 @@ router.get('/account/info', async (ctx) => {
 router.post('/account/login', async (ctx) => {
   let { email, password, captcha } = ctx.request.body
   let result, errMsg
-  if (process.env.TEST_MODE !== 'true' &&
+  if ( captcha !== 'guest_captcha' && // 新增 游客模式判断：当为游客时，验证码传参 guest
+    process.env.TEST_MODE !== 'true' &&
     (!captcha || !ctx.session.captcha || captcha.trim().toLowerCase() !== ctx.session.captcha.toLowerCase())) {
     errMsg = '错误的验证码'
   } else {
