@@ -6,21 +6,10 @@ import Module from '../bo/module';
 import Organization from '../bo/organization';
 import Interface from '../bo/interface';
 import Property from '../bo/property';
-
-declare interface IQueryIncludeItem {
-  model?: object,
-  'as'?: string,
-  include?: any,
-  attributes?: any,
-  required?: boolean,
-  through?: any,
-  paranoid?: boolean,
-  separate?: boolean,
-  order?: [string[]]
-}
+import { Model, IIncludeOptions } from 'sequelize-typescript';
 
 declare interface IQueryInclude {
-  [key: string]: IQueryIncludeItem
+  [key: string]: typeof Model | IIncludeOptions
 }
 
 const QueryInclude: IQueryInclude = {
@@ -40,39 +29,30 @@ const QueryInclude: IQueryInclude = {
     as: 'modules',
     attributes: { exclude: [] },
     required: false,
-    separate: true,
-    order: [
-      ['priority', 'ASC']
-    ],
     include: [{
       model: Interface,
       as: 'interfaces',
       attributes: { exclude: [] },
       required: false,
-      separate: true,
-      order: [
-        ['priority', 'ASC']
-      ],
       include: [{
         model: User,
         as: 'locker',
         attributes: { exclude: ['password', ...Helper.exclude.generalities] },
-        required: false
+        required: false,
       }, {
         model: Property,
         as: 'properties',
         attributes: { exclude: [] },
         required: false,
-        separate: true
-      }]
-    }]
+      }],
+    }],
   },
   Properties: {
     model: Property,
     as: 'properties',
     attributes: { exclude: [] },
-    required: false
-  }
+    required: false,
+  },
 }
 
 export default QueryInclude

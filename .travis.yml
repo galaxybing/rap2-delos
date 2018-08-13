@@ -2,6 +2,7 @@ language: node_js
 
 services:
   - mysql
+  - redis-server
 
 cache:
   directories:
@@ -12,7 +13,7 @@ notifications:
   email: false
 
 node_js:
-  - '8'
+  - '10.1.0'
 
 before_install:
   - npm i -g npm@^5.5.1
@@ -20,8 +21,9 @@ before_install:
 
 script:
   - npm install
+  - npm run build
   - npm run create-db
   - npm run test
-  - npm run linter
+  - npm run check
 
 after_success:

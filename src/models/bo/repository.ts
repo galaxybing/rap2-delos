@@ -1,8 +1,27 @@
-import { Table, Column, Model, HasMany, AutoIncrement, PrimaryKey, AllowNull, DataType, Default, BelongsTo, BelongsToMany, ForeignKey } from 'sequelize-typescript'
+import { Table, Column, Model, HasMany, AutoIncrement, PrimaryKey, AllowNull, DataType, Default, BelongsTo, BelongsToMany, ForeignKey, BeforeUpdate, BeforeCreate, BeforeDelete, BeforeBulkCreate, BeforeBulkUpdate, BeforeBulkDelete } from 'sequelize-typescript'
 import { User, Organization, Module, Interface, RepositoriesCollaborators } from '../'
+import RedisService, { CACHE_KEY } from '../../service/redis'
 
 @Table({ paranoid: true, freezeTableName: false, timestamps: true })
 export default class Repository extends Model<Repository> {
+
+  /** hooks */
+  @BeforeCreate
+  @BeforeUpdate
+  @BeforeDelete
+  static async cleanCache(instance: Repository) {
+    await RedisService.delCache(CACHE_KEY.REPOSITORY_GET, instance.id)
+  }
+
+  @BeforeBulkCreate
+  @BeforeBulkUpdate
+  @BeforeBulkDelete
+  static async bulkDeleteCache(options: any) {
+    const id = options && options.attributes && options.attributes.id
+    if (id) {
+     await RedisService.delCache(CACHE_KEY.REPOSITORY_GET, id)
+    }
+  }
 
   @AutoIncrement
   @PrimaryKey
@@ -61,7 +80,10 @@ export default class Repository extends Model<Repository> {
   @HasMany(() => Module, 'repositoryId')
   interfaces: Interface[]
 
-  @BelongsToMany(() => Repository, () => RepositoriesCollaborators)
+  @BelongsToMany(() => Repository, () => RepositoriesCollaborators, 'repositoryId', 'collaboratorId')
   collaborators: Repository[]
+
+  @BelongsToMany(() => Repository, () => RepositoriesCollaborators, 'collaboratorId')
+  repositories: Repository[]
 
 }

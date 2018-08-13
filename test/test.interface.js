@@ -2,6 +2,7 @@
 let app = require('../dist/scripts/app').default
 let request = require('supertest').agent(app.listen())
 let should = require('chai').should()
+let expect = require('chai').expect
 let Random = require('mockjs').Random
 const { Interface } = require('../dist/models')
 const { mockUsers, mockRepository, prepare } = require('./helper')
@@ -40,8 +41,8 @@ describe('Interface', () => {
       .expect(200)
       .end((err, res) => {
         should.not.exist(err)
-        validInterface(res.body.data)
-        itf = res.body.data
+        validInterface(res.body.data.itf)
+        itf = res.body.data.itf
         done()
       })
   })
@@ -88,7 +89,7 @@ describe('Interface', () => {
       .expect(200)
       .end((err, res) => {
         should.not.exist(err)
-        res.body.data.should.eq(1)
+        res.body.data.itf.id.should.not.be.null
         done()
       })
   })
@@ -99,7 +100,7 @@ describe('Interface', () => {
       .expect(200)
       .end((err, res) => {
         should.not.exist(err)
-        res.body.data.should.eq(1)
+        res.body.data.id.should.not.be.null
         done()
       })
   })
@@ -110,7 +111,7 @@ describe('Interface', () => {
       .expect(200)
       .end((err, res) => {
         should.not.exist(err)
-        res.body.data.should.eq(1)
+        expect(res.body.data.isOk).to.be.true
         done()
       })
   })

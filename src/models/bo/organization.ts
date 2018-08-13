@@ -1,8 +1,18 @@
-import { Table, Column, Model, HasMany, AutoIncrement, PrimaryKey, AllowNull, DataType, Default, BelongsTo, BelongsToMany, ForeignKey } from 'sequelize-typescript'
-import { User, Repository, OrganizationsMembers } from '../'
+import { Table, Column, Model, HasMany, AutoIncrement, PrimaryKey, AllowNull, DataType, Default, BelongsTo, BelongsToMany, ForeignKey, AfterCreate } from 'sequelize-typescript'
+import { User, Repository, OrganizationsMembers, Logger } from '../'
 
 @Table({ paranoid: true, freezeTableName: false, timestamps: true })
 export default class Organization extends Model<Organization> {
+
+
+  @AfterCreate
+  static async createLog(instance: Organization) {
+    await Logger.create({
+      userId: instance.creatorId,
+      type: 'create',
+      organizationId: instance.id
+    })
+  }
 
   @AutoIncrement
   @PrimaryKey
@@ -40,6 +50,9 @@ export default class Organization extends Model<Organization> {
 
   @BelongsToMany(() => User, () => OrganizationsMembers)
   members: User[]
+
+  @HasMany(() => OrganizationsMembers)
+  organizationMembersList: OrganizationsMembers[]
 
   @HasMany(() => Repository, 'organizationId')
   repositories: Repository[]

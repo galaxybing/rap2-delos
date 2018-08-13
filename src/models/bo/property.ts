@@ -1,8 +1,14 @@
 import { Table, Column, Model, AutoIncrement, PrimaryKey, AllowNull, DataType, Default, BelongsTo, ForeignKey } from 'sequelize-typescript'
 import { User, Interface, Module, Repository } from '../'
 
-enum SCOPES { REQUEST = 'request', RESPONSE = 'response' }
-enum TYPES { STRING = 'String', NUMBER = 'Number', BOOLEAN = 'Boolean', OBJECT = 'Object', ARRAY = 'Array', FUNCTION = 'Function', REGEXP = 'RegExp' }
+export enum SCOPES { REQUEST = 'request', RESPONSE = 'response' }
+export enum TYPES { STRING = 'String', NUMBER = 'Number', BOOLEAN = 'Boolean', OBJECT = 'Object', ARRAY = 'Array', FUNCTION = 'Function', REGEXP = 'RegExp' }
+
+export enum REQUEST_PARAMS_TYPE {
+  HEADERS = 1,
+  QUERY_PARAMS = 2,
+  BODY_PARAMS = 3,
+}
 
 @Table({ paranoid: true, freezeTableName: false, timestamps: true })
 export default class Property extends Model<Property> {
@@ -21,16 +27,23 @@ export default class Property extends Model<Property> {
   @Default(SCOPES.RESPONSE)
   @Column({
     type: DataType.ENUM(SCOPES.REQUEST, SCOPES.RESPONSE),
-    comment: 'property owner'
+    comment: 'property owner',
   })
   scope: string
 
   @AllowNull(false)
   @Column({
     type: DataType.ENUM(TYPES.STRING, TYPES.NUMBER, TYPES.BOOLEAN, TYPES.OBJECT, TYPES.ARRAY, TYPES.FUNCTION, TYPES.REGEXP),
-    comment: 'property type'
+    comment: 'property type',
   })
+  /** Data Type */
   type: string
+
+  @AllowNull(false)
+  @Default(2)
+  @Column
+  /** request params type (position) */
+  pos: number
 
   @AllowNull(false)
   @Column(DataType.STRING(256))
@@ -39,7 +52,7 @@ export default class Property extends Model<Property> {
   @Column({ type: DataType.STRING(128), comment: 'property generation rules' })
   rule: string
 
-  @Column({ type: DataType.TEXT, comment: 'value of this property'})
+  @Column({ type: DataType.TEXT, comment: 'value of this property' })
   value: string
 
   @Column(DataType.TEXT)
@@ -52,7 +65,7 @@ export default class Property extends Model<Property> {
 
   @AllowNull(false)
   @Default(1)
-  @Column
+  @Column(DataType.BIGINT(11))
   priority: number
 
   @ForeignKey(() => Interface)
