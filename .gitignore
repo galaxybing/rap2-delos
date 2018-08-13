@@ -2,7 +2,7 @@
 /dist
 /bin
 .DS_Store
-src/config
+/src/config
 node_modules
 src/config
 bower_components
