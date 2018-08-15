@@ -2,6 +2,7 @@
 /dist
 /bin
 .DS_Store
+src/config
 node_modules
 src/config
 bower_components
@@ -11,5 +12,4 @@ tmp
 package-lock.json
 dump.rdb
 /docker/mysql/volume
-
 *-galaxyw.md
