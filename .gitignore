@@ -3,6 +3,7 @@
 /bin
 .DS_Store
 node_modules
+src/config
 bower_components
 coverage
 npm-debug.log
@@ -10,3 +11,5 @@ tmp
 package-lock.json
 dump.rdb
 /docker/mysql/volume
+
+*-galaxyw.md
