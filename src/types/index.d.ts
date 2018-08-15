@@ -10,6 +10,13 @@ declare interface RedisAndClusterOptions extends RedisOptions {
   redisOptions?: any;
 }
 
+declare interface LdapOptions {
+  serverUrl: string;
+  bindDn: string;
+  bindPassword: string;
+  basicDn: string;
+}
+
 declare interface IConfigOptions {
   version: string,
   serve: {
@@ -21,5 +28,6 @@ declare interface IConfigOptions {
   },
   keycenter?: string | boolean,
   db: ISequelizeConfig,
-  redis: RedisAndClusterOptions
+  redis: RedisAndClusterOptions,
+  ldap: LdapOptions,
 }
