@@ -3,9 +3,49 @@ import { User, Notification, Logger, Organization, Repository } from '../models'
 import router from './router'
 import { Model, Sequelize } from 'sequelize-typescript';
 import Pagination from './utils/pagination'
+import { ldapAuthorize } from './utils/ldapAuthorize'
 import { QueryInclude } from '../models'
 import * as md5 from 'md5'
 const Op = Sequelize.Op
+
+declare interface AccountOption {
+  fullname: string;
+  email: string;
+  password: string;
+}
+
+const accountRegisterHandler = async function (arg: AccountOption) {
+  let { fullname, email, password } = arg
+  let result;
+  let exists = await User.findAll({
+    where: { email },
+  })
+  if (exists && exists.length) {
+    result = {
+      isOk: false,
+      errMsg: '该邮件已被注册，请更换再试。',
+    }
+    return result
+  }
+
+  // login automatically after register
+  let userData = await User.create({ fullname, email, password: md5(md5(password)) })
+
+  // if (result) {
+  //   ctx.session.id = result.id
+  //   ctx.session.fullname = result.fullname
+  //   ctx.session.email = result.email
+  //   let app: any = ctx.app
+  //   app.counter.users[result.fullname] = true
+  // }
+
+  result = {
+    id: userData.id,
+    fullname: userData.fullname,
+    email: userData.email,
+  }
+  return result;
+}
 
 router.get('/app/get', async (ctx, next) => {
   let data: any = {}
@@ -67,29 +107,60 @@ router.get('/account/info', async (ctx) => {
 })
 
 router.post('/account/login', async (ctx) => {
-  let { email, password, captcha } = ctx.request.body
+  let { email = '', password, captcha } = ctx.request.body
   let result, errMsg
-  if ( captcha !== 'guest_captcha' && // 新增 游客模式判断：当为游客时，验证码传参 guest
+  if ( email !== 'guest@317hu.com' &&  // 新增 游客模式判断：当为游客时，可为空
+    // captcha !== 'guest_captcha' && // postman 调试传参
     process.env.TEST_MODE !== 'true' &&
-    (!captcha || !ctx.session.captcha || captcha.trim().toLowerCase() !== ctx.session.captcha.toLowerCase())) {
+    ((!captcha) || !ctx.session.captcha || captcha.trim().toLowerCase() !== ctx.session.captcha.toLowerCase())) {
     errMsg = '错误的验证码'
   } else {
-    result = await User.findOne({
-      attributes: QueryInclude.User.attributes,
-      where: { email, password: md5(md5(password)) },
-    })
-    if (result) {
-      ctx.session.id = result.id
-      ctx.session.fullname = result.fullname
-      ctx.session.email = result.email
-      let app: any = ctx.app
-      app.counter.users[result.fullname] = true
-    } else {
-      errMsg = '账号或密码错误'
+    try {
+      // 注册的用户信息
+      let reg = /^[^@]{1,}@?(\w)+\.com$/; // email.indexOf('@') > -1
+      const emailStr: string = reg.test(email) ? email : email + '@317hu.com'
+      result = await User.findOne({
+        attributes: QueryInclude.User.attributes,
+        where: {email: emailStr, password: md5(md5(password)) },
+      })
+
+      if (result) {
+        ctx.session.id = result.id
+        ctx.session.fullname = result.fullname
+        ctx.session.email = result.email
+        let app: any = ctx.app
+        app.counter.users[result.fullname] = true
+      } else {
+        // 当前面 注册账户未查询到信息时，使用 ldap 用户信息，进行注册操作：
+        let userData: any = await ldapAuthorize.login(email.replace(/@317hu\.com$/, ''), password);
+        if (userData.success) {
+          result = await accountRegisterHandler({
+            fullname: userData.data.givenName,
+            email: userData.data.mail,
+            password: password,
+          })
+          if (result.id) {
+            ctx.session.id = result.id
+            ctx.session.fullname = result.fullname
+            ctx.session.email = result.email
+            let app: any = ctx.app
+            app.counter.users[result.fullname] = true
+          } else {
+            errMsg = '账号或密码错误' // '该邮件已被注册，请更换再试。'
+          }
+        } else {
+          errMsg = '账号或密码错误'
+        }
+
+      }
+    } catch (err) {
+      result = err;
     }
+
   }
   ctx.body = {
     data: result ? result : { errMsg },
+    success: true
   }
 })
 
