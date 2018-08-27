@@ -107,14 +107,16 @@ router.get('/account/info', async (ctx) => {
 })
 
 router.post('/account/login', async (ctx) => {
-  let { email = '', password, captcha } = ctx.request.body
-  let result, errMsg
+  let { email = '', password /* , captcha*/ } = ctx.request.body
+  let result, errMsg;
+  /*
   if ( email !== 'guest@317hu.com' &&  // 新增 游客模式判断：当为游客时，可为空
     // captcha !== 'guest_captcha' && // postman 调试传参
     process.env.TEST_MODE !== 'true' &&
     ((!captcha) || !ctx.session.captcha || captcha.trim().toLowerCase() !== ctx.session.captcha.toLowerCase())) {
     errMsg = '错误的验证码'
   } else {
+  */
     try {
       // 注册的用户信息
       let reg = /^[^@]{1,}@?(\w)+\.com$/; // email.indexOf('@') > -1
@@ -156,8 +158,9 @@ router.post('/account/login', async (ctx) => {
     } catch (err) {
       result = err;
     }
-
+  /*
   }
+  */
   ctx.body = {
     data: result ? result : { errMsg },
     success: true
