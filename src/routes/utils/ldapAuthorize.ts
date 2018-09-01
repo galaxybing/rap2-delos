@@ -56,8 +56,8 @@ export const ldapAuthorize = {
           result.on('searchReference', function(/*referral: any*/) {
             console.log('referral: ')// + referral.uris.join());
           });
-          result.on('page', function(result: any, cb: any) {
-            console.log('result->', JSON.stringify(result), ' cb->', cb)
+          result.on('page', function(result: any) {
+            console.log('result->' + JSON.stringify(result))
           });
           // 查询错误事件
           result.on('error', function(/*err: any*/) {
@@ -68,9 +68,9 @@ export const ldapAuthorize = {
           result.on('end', function() {
             client.unbind(function (err: any, res: any) {
               if (!err && res.messageID == 3) { // 表示未捕获？？on('searchEntry' 回调情况
-                resolve({ errCode: res.status, errMsg: `抱歉，用户名错误`});
+                reject({ errCode: res.status, errMsg: `抱歉，用户名错误`});
               } else if (res.messageID == 4) {
-                //
+                resolve({ errCode: res.status, errMsg: `未注册的ldap用户，即将去注册`});
               }
             }); // unbind操作，必须要做
           });
