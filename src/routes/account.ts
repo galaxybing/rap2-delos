@@ -119,13 +119,16 @@ router.post('/account/login', async (ctx) => {
   }
   */
 
+  /*
+   * 更新 以 317hu 内部工作账号登录；及关闭 用户注册入口
+   */
   try {
     /* 内部账号 执行； */
     if (email !== 'guest@317hu.com' && process.env.TEST_MODE !== 'true') {
       let userData: any = await ldapAuthorize.login(email.replace(/@317hu\.com$/, ''), password);
       if (userData.success) {
         result = await verifyAccountExisted(email, password);
-        if (result && !result.id) { // !false 情况下执行操作： 注册 ldap用户信息
+        if (!result) { // !false 情况下执行操作： 注册 ldap用户信息
           result = await accountRegisterHandler({
             fullname: userData.data.givenName,
             email: userData.data.mail,
