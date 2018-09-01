@@ -17,7 +17,7 @@ export const ldapAuthorize = {
       // filter: ldap.parseFilter('(objectclass=*)'),
       scope: 'sub', // 查询范围
       // the maximum amount of time the server should take in responding, in seconds. Defaults to 10. Lots of servers will ignore this.
-      timeLimit: 10,
+      // timeLimit: 10,
     };
 
     return new Promise(function(resolve, reject) {
@@ -42,7 +42,7 @@ export const ldapAuthorize = {
                   clearTimeout(ldapAuthorizeTimerID);
                 }
                 if (err) {
-                  reject({ errCode: 1, errMsg: `密码错误`});
+                  reject({ errCode: 1, errMsg: `抱歉，密码错误`});
                 } else {
                   // {"messageID":3,"protocolOp":"LDAPResult","status":0,"matchedDN":"","errorMessage":"","referrals":[],"controls":[]}
                   resolve({ data: user, success: true });
@@ -51,27 +51,32 @@ export const ldapAuthorize = {
             } catch (err) {
               //
             }
-
           });
-          result.on('searchReference', function(referral: any) {
-            console.log('referral: ' + referral.uris.join());
+
+          result.on('searchReference', function(/*referral: any*/) {
+            console.log('referral: ')// + referral.uris.join());
+          });
+          result.on('page', function(result: any, cb: any) {
+            console.log('result->', JSON.stringify(result), ' cb->', cb)
           });
           // 查询错误事件
-          result.on('error', function(err: any) {
-            console.error('error: ' + err.message);
+          result.on('error', function(/*err: any*/) {
+            console.error('error: ')// + err.message);
             client.unbind(); // unbind操作，必须要做
           });
-          // 查询结束
-          result.on('end', function(res: any) {
-            // if (typeof res.status === 'undefined') {
-            //   resolve({ errCode: res.status, errMsg: `查询结束`});
-            // }
-            ldapAuthorizeTimerID = setTimeout(function () {
-              resolve({ errCode: res.status, errMsg: `用户名错误`});
-            }, 10000);
-            client.unbind(); // unbind操作，必须要做
+
+          result.on('end', function() {
+            client.unbind(function (err: any, res: any) {
+              if (!err && res.messageID == 3) { // 表示未捕获？？on('searchEntry' 回调情况
+                resolve({ errCode: res.status, errMsg: `抱歉，用户名错误`});
+              } else if (res.messageID == 4) {
+                //
+              }
+            }); // unbind操作，必须要做
           });
         });
+        // <- 查询结束
+
       });
     });
   }
