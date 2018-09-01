@@ -27,18 +27,7 @@ const accountRegisterHandler = async function (arg: AccountOption) {
     }
     return result
   }
-
-  // login automatically after register
   let userData = await User.create({ fullname, email, password: md5(md5(password)) })
-
-  // if (result) {
-  //   ctx.session.id = result.id
-  //   ctx.session.fullname = result.fullname
-  //   ctx.session.email = result.email
-  //   let app: any = ctx.app
-  //   app.counter.users[result.fullname] = true
-  // }
-
   result = {
     id: userData.id,
     fullname: userData.fullname,
@@ -46,6 +35,17 @@ const accountRegisterHandler = async function (arg: AccountOption) {
   }
   return result;
 }
+
+const verifyAccountExisted = async function(account: string, password: string|Buffer) {
+  let reg = /^[^@]{1,}@?(\w)+\.com$/; // email.indexOf('@') > -1
+  const emailStr: string = reg.test(account) ? account : account + '@317hu.com'
+  const data = await User.findOne({
+    attributes: QueryInclude.User.attributes,
+    where: {email: emailStr, password: md5(md5(password)) },
+  })
+  return data;
+}
+
 
 router.get('/app/get', async (ctx, next) => {
   let data: any = {}
@@ -116,51 +116,53 @@ router.post('/account/login', async (ctx) => {
     ((!captcha) || !ctx.session.captcha || captcha.trim().toLowerCase() !== ctx.session.captcha.toLowerCase())) {
     errMsg = '错误的验证码'
   } else {
+  }
   */
-    try {
-      // 注册的用户信息
+
+  try {
+    /* 内部账号 执行； */
+    if (email !== 'guest@317hu.com' && process.env.TEST_MODE !== 'true') {
+      let userData: any = await ldapAuthorize.login(email.replace(/@317hu\.com$/, ''), password);
+      if (userData.success) {
+        result = await verifyAccountExisted(email, password);
+        if (result && !result.id) { // !false 情况下执行操作： 注册 ldap用户信息
+          result = await accountRegisterHandler({
+            fullname: userData.data.givenName,
+            email: userData.data.mail,
+            password: password,
+          })
+        }
+        if (result && result.id) {
+          ctx.session.id = result.id
+          ctx.session.fullname = result.fullname
+          ctx.session.email = result.email
+          let app: any = ctx.app
+          app.counter.users[result.fullname] = true
+        } else {
+          errMsg = '账号或密码错误，请更新后再试。' // '该邮件已被注册，请更换再试。'
+        }
+      } else {
+        errMsg = userData.errMsg ? userData.errMsg : '抱歉，账号或密码错误？'
+      }
+    } else { // 游客模式 执行；
       let reg = /^[^@]{1,}@?(\w)+\.com$/; // email.indexOf('@') > -1
       const emailStr: string = reg.test(email) ? email : email + '@317hu.com'
       result = await User.findOne({
         attributes: QueryInclude.User.attributes,
         where: {email: emailStr, password: md5(md5(password)) },
       })
-
-      if (result) {
-        ctx.session.id = result.id
-        ctx.session.fullname = result.fullname
-        ctx.session.email = result.email
-        let app: any = ctx.app
-        app.counter.users[result.fullname] = true
-      } else {
-        // 当前面 注册账户未查询到信息时，使用 ldap 用户信息，进行注册操作：
-        let userData: any = await ldapAuthorize.login(email.replace(/@317hu\.com$/, ''), password);
-        if (userData.success) {
-          result = await accountRegisterHandler({
-            fullname: userData.data.givenName,
-            email: userData.data.mail,
-            password: password,
-          })
-          if (result.id) {
-            ctx.session.id = result.id
-            ctx.session.fullname = result.fullname
-            ctx.session.email = result.email
-            let app: any = ctx.app
-            app.counter.users[result.fullname] = true
-          } else {
-            errMsg = '账号或密码错误' // '该邮件已被注册，请更换再试。'
-          }
-        } else {
-          errMsg = '账号或密码错误'
-        }
-
-      }
-    } catch (err) {
-      result = err;
     }
-  /*
+    if (result && result.id) {
+      ctx.session.id = result.id
+      ctx.session.fullname = result.fullname
+      ctx.session.email = result.email
+      // ?
+      let app: any = ctx.app
+      app.counter.users[result.fullname] = true
+    }
+  } catch (err) {
+    errMsg = err.errMsg ? err.errMsg : err; // 捕获 reject
   }
-  */
   ctx.body = {
     data: result ? result : { errMsg },
     success: true
