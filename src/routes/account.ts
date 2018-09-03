@@ -20,10 +20,11 @@ const accountRegisterHandler = async function (arg: AccountOption) {
   let exists = await User.findAll({
     where: { email },
   })
-  if (exists && exists.length) {
+  if (exists && exists.length) { // 账号 已存在 或 密码错误
     result = {
       isOk: false,
-      errMsg: '该邮件已被注册，请更换再试。',
+      // errMsg: '该邮件已被注册，请更换再试。',
+      errMsg: '密码错误，请稍后重试'
     }
     return result
   }
@@ -43,7 +44,7 @@ const verifyAccountExisted = async function(account: string, password: string|Bu
     attributes: QueryInclude.User.attributes,
     where: {email: emailStr, password: md5(md5(password)) },
   })
-  return data;
+  return data; // ?密码不对，也将返回 undefined
 }
 
 
@@ -127,8 +128,12 @@ router.post('/account/login', async (ctx) => {
     if (email !== 'guest@317hu.com' && process.env.TEST_MODE !== 'true') {
       let userData: any = await ldapAuthorize.login(email.replace(/@317hu\.com$/, ''), password);
       if (userData.success) {
-        result = await verifyAccountExisted(email, password);
+        result = await verifyAccountExisted(email, password); // 账号不存在 + 密码错误，都会校验不出账号数据
         if (!result) { // !false 情况下执行操作： 注册 ldap用户信息
+          // result = {
+          //   errCode: 2,
+          //   errMsg: '密码错误，请稍后重试'
+          // }
           result = await accountRegisterHandler({
             fullname: userData.data.givenName,
             email: userData.data.mail,

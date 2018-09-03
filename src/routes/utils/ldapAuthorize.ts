@@ -2,7 +2,7 @@
 const ldap = require('ldapjs');
 import config from '../../config'
 
-let ldapAuthorizeTimerID: any;
+// let ldapAuthorizeTimerID: any;
 
 export const ldapAuthorize = {
   login: function(username: string, userPassword: string) {
@@ -34,13 +34,20 @@ export const ldapAuthorize = {
             let user = entry.object;
             // 获取 用户 DN
             // mail=*@317hu.com,ou=Users,domainName=317hu.com,o=domains,dc=317hu,dc=com
+
+            if (userPassword) {
+              //
+            }
+            /*
             const userDN = user.dn;
-            // 校验 用户的密码
+
+            // 校验 用户的密码： ldap://mail.317hu.com:389 closed 二次连结导致该异常频现；
             try {
-              client.bind(userDN, userPassword, function(err: any /* , res: any */) { // res: any
+              client.bind(userDN, userPassword, function(err: any) { // res: any
                 if (ldapAuthorizeTimerID) {
                   clearTimeout(ldapAuthorizeTimerID);
                 }
+
                 if (err) {
                   reject({ errCode: 1, errMsg: `抱歉，密码错误`});
                 } else {
@@ -51,6 +58,8 @@ export const ldapAuthorize = {
             } catch (err) {
               //
             }
+            */
+            resolve({ data: user, success: true });
           });
 
           result.on('searchReference', function(/*referral: any*/) {
