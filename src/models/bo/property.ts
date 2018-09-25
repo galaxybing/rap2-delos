@@ -58,6 +58,9 @@ export default class Property extends Model<Property> {
   @Column(DataType.TEXT)
   description: string
 
+  @Column
+  requiredType: number
+
   @AllowNull(false)
   @Default(-1)
   @Column({ comment: 'parent property ID' })

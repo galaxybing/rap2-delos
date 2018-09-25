@@ -204,6 +204,7 @@ router.get('/repository/get', async (ctx) => {
     })
     await RedisService.setCache(CACHE_KEY.REPOSITORY_GET, JSON.stringify(repository), ctx.query.id)
   }
+
   ctx.body = {
     data: repository,
   }
@@ -772,6 +773,7 @@ router.post('/properties/update', async (ctx, next) => {
   const itfId = +ctx.query.itf
   let { properties, summary } = ctx.request.body // JSON.parse(ctx.request.body)
   properties = Array.isArray(properties) ? properties : [properties]
+  console.log('/properties/update......properties->', properties);
 
   let itf = await Interface.findById(itfId)
 
